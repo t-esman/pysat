@@ -358,10 +358,13 @@ def collect_inst_model_pairs(start=None, stop=None, tinc=None, inst=None,
         raise ValueError('Need routine to clean the instrument data')
 
     # Download the instrument data, if needed
-    # Could use some improvement, for not re-downloading times that you already
-    # have
     if (stop - start).days != len(inst.files[start:stop]):
-        inst.download(start=start, stop=stop, user=user, password=password)
+        missing_times = [tt for tt in pds.date_range(start, stop, freq='1D',
+                                                     closed='left')
+                         if tt not in inst.files[start:stop].index]
+        for tt in missing_times:
+            inst.download(start=tt, stop=tt+pds.DateOffset(days=1),
+                          user=user, password=password)
 
     # Cycle through the times, loading the model and instrument data as needed
     istart = start
