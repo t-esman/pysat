@@ -869,6 +869,8 @@ class Instrument(object):
         except AttributeError:
             pass
 
+        self.__doc__ = inst.__doc__ + self.__doc__
+
         return
 
     def __str__(self):
