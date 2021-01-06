@@ -1,18 +1,26 @@
-Code Examples
-=============
+Sample Scientific Analysis
+==========================
 
-Pysat tends to reduce certain science data investigations to the construction of a routine(s) that makes that investigation unique, a call to a seasonal analysis routine, and some plotting commands. Several demonstrations are offered in this section. The full code for each example is available in the repository in the demo folder.
+pysat tends to reduce certain science data investigations to the construction
+of a routine(s) that makes that investigation unique, a call to a seasonal
+analysis routine, and some plotting commands. Several demonstrations are
+offered in this section. The full code for each example is available in the
+repository in the demo folder.
 
 Orbit-by-Orbit Plots
 --------------------
 
-Plotting a series of orbit-by-orbit plots is a great way to become familiar with a data set. If the data set doesn't come with orbit information, this can be a challenge. Orbits also go past day breaks, so if data comes in daily files this requires loading multiple files at once, joining the data together, etc. pysat goes through that trouble for you.
+Plotting a series of orbit-by-orbit plots is a great way to become familiar
+with a satellite data set. If the data set doesn't come with orbit information
+this can be a challenge. Orbits also go past day breaks. If data comes in daily
+files this requires loading multiple files at once, joining the data together,
+etc. pysat goes through that trouble for you.
 
 .. code:: python
 
    import datetime as dt
-   import os
    import matplotlib.pyplot as plt
+   import os
    import pysat
 
    # set the directory to save plots to
@@ -35,8 +43,9 @@ Plotting a series of orbit-by-orbit plots is a great way to become familiar with
    # data at the end of download
    vefi.download(start, stop)
 
-   # leave bounds unassigned to cover the whole dataset
+   # Specify the analysis time limits using `bounds`
    vefi.bounds = (start, stop)
+   # if unassigned, code will run for the entire dataset available
 
    for orbit_count, vefi in enumerate(vefi.orbits):
        # for each loop pysat puts a copy of the next available

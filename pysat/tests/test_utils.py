@@ -1,19 +1,27 @@
+#!/usr/bin/env python
+# Full license can be found in License.md
+# Full author list can be found in .zenodo.json file
+# DOI:10.5281/zenodo.1199703
+# ----------------------------------------------------------------------------
 """
 tests the pysat utils area
 """
+
+import contextlib
+from io import StringIO
+from importlib import reload
 import numpy as np
 import os
 import pytest
+import shutil
 import tempfile
 
 import pysat
-
-from importlib import reload as re_load
+from pysat.tests.registration_test_class import TestWithRegistration
 
 
 # ----------------------------------
 # test netCDF export file support
-
 def prep_dir(inst=None):
 
     if inst is None:
@@ -53,9 +61,9 @@ class TestBasics():
         check1 = (pysat.data_dir == '.')
 
         # Check if next load of pysat remembers the change
-        pysat._files = re_load(pysat._files)
-        pysat._instrument = re_load(pysat._instrument)
-        re_load(pysat)
+        pysat._files = reload(pysat._files)
+        pysat._instrument = reload(pysat._instrument)
+        reload(pysat)
         check2 = (pysat.data_dir == '.')
 
         assert check1 & check2
@@ -66,9 +74,9 @@ class TestBasics():
         assert (pysat.data_dir == '.')
 
         # Check if next load of pysat remembers old settings
-        pysat._files = re_load(pysat._files)
-        pysat._instrument = re_load(pysat._instrument)
-        re_load(pysat)
+        pysat._files = reload(pysat._files)
+        pysat._instrument = reload(pysat._instrument)
+        reload(pysat)
         assert (pysat.data_dir == self.data_path)
 
     def test_set_data_dir_wrong_path(self):
@@ -81,29 +89,47 @@ class TestBasics():
             pysat.utils.set_data_dir('/fake/directory/path', store=False)
         assert str(excinfo.value).find('does not lead to a valid dir') >= 0
 
-    def test_initial_pysat_load(self):
-        import shutil
-        saved = False
-        try:
-            root = os.path.join(os.getenv('HOME'), '.pysat')
-            new_root = os.path.join(os.getenv('HOME'), '.saved_pysat')
-            shutil.move(root, new_root)
-            saved = True
-        except:
-            pass
 
-        re_load(pysat)
+class TestCIonly():
+    """Tests where we mess with local settings.
+    These only run in CI environments such as Travis and Appveyor to avoid
+    breaking an end user's setup
+    """
 
-        try:
-            if saved:
-                # remove directory, trying to be careful
-                os.remove(os.path.join(root, 'data_path.txt'))
-                os.rmdir(root)
-                shutil.move(new_root, root)
-        except:
-            pass
+    def setup(self):
+        """Runs before every method to create a clean testing setup."""
+        self.ci_env = (os.environ.get('TRAVIS') == 'true')
+        if not self.ci_env:
+            pytest.skip("Skipping local tests to avoid breaking user setup")
 
-        assert True
+    def teardown(self):
+        """Runs after every method to clean up previous testing."""
+        del self.ci_env
+
+    def test_initial_pysat_load(self, capsys):
+        """Ensure inital load routines work"""
+
+        # Move settings directory to simulate first load after install
+        root = os.path.join(os.getenv('HOME'), '.pysat')
+        new_root = os.path.join(os.getenv('HOME'), '.saved_pysat')
+        shutil.move(root, new_root)
+
+        reload(pysat)
+
+        captured = capsys.readouterr()
+        assert captured.out.find("Hi there!") >= 0
+
+        # Make sure user files are blank
+        with open(os.path.join(root, 'data_path.txt'), 'r') as f:
+            dir_list = f.readlines()
+            assert len(dir_list) == 1
+            assert dir_list[0].find('/home/travis/build/pysatData') >= 0
+        with open(os.path.join(root, 'user_modules.txt'), 'r') as f:
+            assert len(f.readlines()) == 0
+
+        # Move settings back
+        shutil.rmtree(root)
+        shutil.move(new_root, root)
 
 
 class TestScaleUnits():
@@ -214,10 +240,9 @@ class TestBasicNetCDF4():
         dir_name = tempfile.mkdtemp()
         pysat.utils.set_data_dir(dir_name, store=False)
 
-        self.testInst = pysat.Instrument(platform='pysat',
-                                         name='testing',
-                                         sat_id='100',
-                                         clean_level='clean')
+        self.testInst = pysat.Instrument(platform='pysat', name='testing',
+                                         num_samples=100)
+        self.stime = pysat.instruments.pysat_testing._test_dates['']['']
         self.testInst.pandas_format = True
 
         # create testing directory
@@ -227,19 +252,22 @@ class TestBasicNetCDF4():
         """Runs after every method to clean up previous testing."""
         remove_files(self.testInst)
         pysat.utils.set_data_dir(self.data_path, store=False)
-        del self.testInst
+        del self.testInst, self.stime
 
     def test_load_netcdf4_empty_filenames(self):
         with pytest.raises(ValueError):
             pysat.utils.load_netcdf4(fnames=None)
 
-    def test_basic_write_and_read_netcdf4_default_format(self):
+    @pytest.mark.parametrize('unlimited', [True, False])
+    def test_basic_write_and_read_netcdf4_default_format(self, unlimited):
+        """Test writing and loading netcdf4 file, with/out unlimited time dim
+        """
         # create a bunch of files by year and doy
         prep_dir(self.testInst)
         outfile = os.path.join(self.testInst.files.data_path,
                                'pysat_test_ncdf.nc')
-        self.testInst.load(2009, 1)
-        self.testInst.to_netcdf4(outfile)
+        self.testInst.load(date=self.stime)
+        self.testInst.to_netcdf4(outfile, unlimited_time=unlimited)
 
         loaded_inst, meta = \
             pysat.utils.load_netcdf4(outfile,
@@ -262,11 +290,13 @@ class TestBasicNetCDF4():
                 assert(np.all(self.testInst[key] == loaded_inst[key]))
 
     def test_basic_write_and_read_netcdf4_mixed_case_format(self):
+        """ Test basic netCDF4 read/write with mixed case data variables
+        """
         # create a bunch of files by year and doy
         prep_dir(self.testInst)
         outfile = os.path.join(self.testInst.files.data_path,
                                'pysat_test_ncdf.nc')
-        self.testInst.load(2009, 1)
+        self.testInst.load(date=self.stime)
         # modify data names in data
         original = sorted(self.testInst.data.columns)
         self.testInst.data = self.testInst.data.rename(str.upper,
@@ -274,9 +304,8 @@ class TestBasicNetCDF4():
         self.testInst.to_netcdf4(outfile, preserve_meta_case=True)
 
         loaded_inst, meta = pysat.utils.load_netcdf4(outfile)
-        self.testInst.data = \
-            self.testInst.data.reindex(sorted(self.testInst.data.columns),
-                                       axis=1)
+        self.testInst.data = self.testInst.data.reindex(
+            sorted(self.testInst.data.columns), axis=1)
         loaded_inst = loaded_inst.reindex(sorted(loaded_inst.columns), axis=1)
 
         # check that names are lower case when written
@@ -298,45 +327,49 @@ class TestBasicNetCDF4():
                       == sorted(loaded_inst.columns))
 
     def test_write_netcdf4_duplicate_variable_names(self):
+        """ Test netCDF4 writing with duplicate variable names
+        """
         # create a bunch of files by year and doy
         prep_dir(self.testInst)
         outfile = os.path.join(self.testInst.files.data_path,
                                'pysat_test_ncdf.nc')
-        self.testInst.load(2009, 1)
+        self.testInst.load(date=self.stime)
         self.testInst['MLT'] = 1
         with pytest.raises(ValueError):
             self.testInst.to_netcdf4(outfile, preserve_meta_case=True)
 
     def test_write_and_read_netcdf4_default_format_w_compression(self):
-        # create a bunch of files by year and doy
+        """Test success of writing and reading a compressed netCDF4 file
+        """
+        # Create a bunch of files by year and doy
         prep_dir(self.testInst)
         outfile = os.path.join(self.testInst.files.data_path,
                                'pysat_test_ncdf.nc')
-        self.testInst.load(2009, 1)
+        self.testInst.load(date=self.stime)
         self.testInst.to_netcdf4(outfile, zlib=True)
 
         loaded_inst, meta = pysat.utils.load_netcdf4(outfile)
-        self.testInst.data = \
-            self.testInst.data.reindex(sorted(self.testInst.data.columns),
-                                       axis=1)
+        self.testInst.data = self.testInst.data.reindex(
+            sorted(self.testInst.data.columns), axis=1)
         loaded_inst = loaded_inst.reindex(sorted(loaded_inst.columns), axis=1)
 
         for key in self.testInst.data.columns:
             assert (np.all(self.testInst[key] == loaded_inst[key]))
 
     def test_write_and_read_netcdf4_default_format_w_weird_epoch_name(self):
+        """ Test the netCDF4 write/read abilities with an odd epoch name
+        """
         # create a bunch of files by year and doy
         prep_dir(self.testInst)
         outfile = os.path.join(self.testInst.files.data_path,
                                'pysat_test_ncdf.nc')
-        self.testInst.load(2009, 1)
+        self.testInst.load(date=self.stime)
         self.testInst.to_netcdf4(outfile, epoch_name='Santa')
 
         loaded_inst, meta = pysat.utils.load_netcdf4(outfile,
                                                      epoch_name='Santa')
-        self.testInst.data = \
-            self.testInst.data.reindex(sorted(self.testInst.data.columns),
-                                       axis=1)
+        self.testInst.data = self.testInst.data.reindex(
+            sorted(self.testInst.data.columns), axis=1)
         loaded_inst = loaded_inst.reindex(sorted(loaded_inst.columns), axis=1)
 
         for key in self.testInst.data.columns:
@@ -420,8 +453,9 @@ class TestBasicNetCDF4():
         assert np.all(test_list)
 
     def test_netcdf_prevent_attribute_override(self):
-        """Test that attributes will not be overridden by default"""
-        self.testInst.load(2009, 1)
+        """Test that attributes will not be overridden by default
+        """
+        self.testInst.load(date=self.stime)
 
         try:
             assert self.testInst.bespoke  # should raise
@@ -436,15 +470,16 @@ class TestBasicNetCDF4():
             pass
 
     def test_netcdf_attribute_override(self):
-        """Test that attributes in netcdf file may be overridden"""
-        self.testInst.load(2009, 1)
+        """Test that attributes in netcdf file may be overridden
+        """
+        self.testInst.load(date=self.stime)
 
         self.testInst.meta.mutable = True
         self.testInst.meta.bespoke = True
 
         self.testInst.meta.transfer_attributes_to_instrument(self.testInst)
 
-        # ensure custom meta attribute assigned to instrument
+        # Ensure custom meta attribute assigned to instrument
         assert self.testInst.bespoke
 
         fname = 'output.nc'
@@ -453,7 +488,7 @@ class TestBasicNetCDF4():
 
         data, meta = pysat.utils.load_netcdf4(outfile)
 
-        # custom attribute correctly read from file
+        # Custom attribute correctly read from file
         assert meta.bespoke
 
 
@@ -471,9 +506,9 @@ class TestBasicNetCDF4xarray(TestBasicNetCDF4):
 
         self.testInst = pysat.Instrument(platform='pysat',
                                          name='testing2d_xarray',
-                                         sat_id='100',
-                                         clean_level='clean')
-        self.testInst.pandas_format = False
+                                         num_samples=100)
+        self.stime = pysat.instruments.pysat_testing2d_xarray._test_dates[
+            '']['']
 
         # create testing directory
         prep_dir(self.testInst)
@@ -482,36 +517,206 @@ class TestBasicNetCDF4xarray(TestBasicNetCDF4):
         """Runs after every method to clean up previous testing."""
         remove_files(self.testInst)
         pysat.utils.set_data_dir(self.data_path, store=False)
-        del self.testInst
+        del self.testInst, self.stime
 
-    # def test_basic_write_and_read_netcdf4_default_format(self):
-    #     # create a bunch of files by year and doy
-    #     prep_dir(self.testInst)
-    #     outfile = os.path.join(self.testInst.files.data_path,
-    #                            'pysat_test_ncdf.nc')
-    #     self.testInst.load(2009, 1)
-    #     self.testInst.data.attrs['new_attr'] = 1
-    #     self.testInst.data.to_netcdf(outfile)
-    #
-    #     loaded_inst, meta = \
-    #         pysat.utils.load_netcdf4(outfile,
-    #                                  pandas_format=self.testInst.pandas_format)
-    #     keys = self.testInst.data.data_vars.keys()
-    #
-    #     for key in keys:
-    #         assert(np.all(self.testInst[key] == loaded_inst[key]))
-    #     assert meta.new_attr == 1
-    #
-    # def test_load_netcdf4_pandas_3d_error(self):
-    #     # create a bunch of files by year and doy
-    #     prep_dir(self.testInst)
-    #     outfile = os.path.join(self.testInst.files.data_path,
-    #                            'pysat_test_ncdf.nc')
-    #     self.testInst.load(2009, 1)
-    #     self.testInst.data.attrs['new_attr'] = 1
-    #     self.testInst.data.to_netcdf(outfile)
-    #
-    #     with pytest.raises(ValueError):
-    #         loaded_inst, meta = pysat.utils.load_netcdf4(outfile,
-    #                                                      epoch_name='time',
-    #                                                      pandas_format=True)
+    def test_basic_write_and_read_netcdf4_default_format(self):
+        """ Test basic netCDF4 writing and reading
+        """
+        # create a bunch of files by year and doy
+        prep_dir(self.testInst)
+        outfile = os.path.join(self.testInst.files.data_path,
+                               'pysat_test_ncdf.nc')
+        self.testInst.load(date=self.stime)
+        self.testInst.data.attrs['new_attr'] = 1
+        self.testInst.data.to_netcdf(outfile)
+
+        loaded_inst, meta = pysat.utils.load_netcdf4(
+            outfile, pandas_format=self.testInst.pandas_format)
+        keys = self.testInst.data.data_vars.keys()
+
+        for key in keys:
+            assert(np.all(self.testInst[key] == loaded_inst[key]))
+        assert meta.new_attr == 1
+
+    def test_load_netcdf4_pandas_3d_error(self):
+        """ Test load_netcdf4 error with a pandas 3D file
+        """
+        # create a bunch of files by year and doy
+        prep_dir(self.testInst)
+        outfile = os.path.join(self.testInst.files.data_path,
+                               'pysat_test_ncdf.nc')
+        self.testInst.load(date=self.stime)
+        self.testInst.data.attrs['new_attr'] = 1
+        self.testInst.data.to_netcdf(outfile)
+
+        with pytest.raises(ValueError):
+            loaded_inst, meta = pysat.utils.load_netcdf4(
+                outfile, epoch_name='time', pandas_format=True)
+
+
+class TestFmtCols():
+    def setup(self):
+        """Runs before every method to create a clean testing setup."""
+        # store current pysat directory
+        self.in_str = np.arange(0, 40, 1).astype(str)
+        self.in_kwargs = {"ncols": 5, "max_num": 40, "lpad": None}
+        self.out_str = None
+        self.filler_row = -1
+        self.ncols = None
+        self.nrows = None
+        self.lpad = len(self.in_str[-1]) + 1
+
+    def teardown(self):
+        """Runs after every method to clean up previous testing."""
+        del self.in_str, self.in_kwargs, self.out_str, self.filler_row
+        del self.ncols, self.nrows, self.lpad
+
+    def test_output(self):
+        """ Test for the expected number of rows, columns, and fillers
+        """
+        if self.out_str is None and self.ncols is None and self.nrows is None:
+            return
+
+        # Test the number of rows
+        out_rows = self.out_str.split('\n')[:-1]
+        assert len(out_rows) == self.nrows
+
+        # Test the number of columns
+        for i, row in enumerate(out_rows):
+            split_row = row.split()
+
+            # Test for filler ellipses and standard row length
+            if i == self.filler_row:
+                assert '...' in split_row
+                if i > 0:
+                    assert len(split_row) == 1
+                    assert len(row) == self.lpad * self.ncols
+            else:
+                assert len(row) == self.lpad * len(split_row)
+
+                if i == len(out_rows) - 1:
+                    assert len(split_row) <= self.ncols
+                else:
+                    assert len(split_row) == self.ncols
+
+        return
+
+    def test_neg_ncols(self):
+        """ Test the output if the column number is negative
+        """
+        self.in_kwargs['ncols'] = -5
+        self.out_str = pysat.utils._core.fmt_output_in_cols(self.in_str,
+                                                            **self.in_kwargs)
+        assert len(self.out_str) == 0
+
+    @pytest.mark.parametrize("key,val,raise_type",
+                             [("ncols", 0, ZeroDivisionError),
+                              ("max_num", -10, ValueError)])
+    def test_fmt_raises(self, key, val, raise_type):
+        self.in_kwargs[key] = val
+        with pytest.raises(raise_type):
+            pysat.utils._core.fmt_output_in_cols(self.in_str, **self.in_kwargs)
+
+    @pytest.mark.parametrize("ncol", [(3), (5), (10)])
+    def test_ncols(self, ncol):
+        """ Test the output for different number of columns
+        """
+        # Set the input
+        self.in_kwargs['ncols'] = ncol
+
+        # Set the comparison values
+        self.ncols = ncol
+        self.nrows = int(np.ceil(self.in_kwargs['max_num'] / ncol))
+
+        # Get and test the output
+        self.out_str = pysat.utils._core.fmt_output_in_cols(self.in_str,
+                                                            **self.in_kwargs)
+        self.test_output()
+
+    @pytest.mark.parametrize("max_num,filler,nrow", [(0, 0, 1), (1, 0, 1),
+                                                     (10, 1, 3), (50, -1, 8)])
+    def test_max_num(self, max_num, filler, nrow):
+        """ Test the output for the maximum number of values
+        """
+        # Set the input
+        self.in_kwargs['max_num'] = max_num
+
+        # Set the comparison values
+        self.filler_row = filler
+        self.ncols = self.in_kwargs['ncols']
+        self.nrows = nrow
+
+        # Get and test the output
+        self.out_str = pysat.utils._core.fmt_output_in_cols(self.in_str,
+                                                            **self.in_kwargs)
+        self.test_output()
+
+    @pytest.mark.parametrize("in_pad", [5, 30])
+    def test_lpad(self, in_pad):
+        """ Test the output for different number of columns
+        """
+        # Set the input
+        self.in_kwargs['lpad'] = in_pad
+        self.ncols = self.in_kwargs['ncols']
+        self.nrows = int(np.ceil(self.in_kwargs['max_num'] / self.ncols))
+
+        # Set the comparison values
+        self.lpad = in_pad
+
+        # Get and test the output
+        self.out_str = pysat.utils._core.fmt_output_in_cols(self.in_str,
+                                                            **self.in_kwargs)
+        self.test_output()
+
+
+class TestAvailableInst(TestWithRegistration):
+
+    # Set setup/teardown to the class defaults
+    setup = TestWithRegistration.setup
+    teardown = TestWithRegistration.teardown
+
+    @pytest.mark.parametrize("inst_loc", [None, pysat.instruments])
+    @pytest.mark.parametrize("inst_flag, plat_flag",
+                             [(None, None), (False, False), (True, True)])
+    def test_display_available_instruments(self, inst_loc, inst_flag,
+                                           plat_flag):
+        """Test display_available_instruments options
+        """
+        # If using the pysat registry, make sure there is something registered
+        if inst_loc is None:
+            pysat.utils.registry.register(self.module_names)
+
+        # Initialize the STDOUT stream
+        new_stdout = StringIO()
+
+        with contextlib.redirect_stdout(new_stdout):
+            pysat.utils.display_available_instruments(
+                inst_loc, show_inst_mod=inst_flag, show_platform_name=plat_flag)
+
+        out = new_stdout.getvalue()
+        assert out.find("Description") > 0
+
+        if (inst_loc is None and plat_flag is None) or plat_flag:
+            assert out.find("Platform") == 0
+            assert out.find("Name") > 0
+
+        if (inst_loc is not None and inst_flag is None) or inst_flag:
+            assert out.find("Instrument_Module") >= 0
+
+        if inst_loc is not None and inst_flag in [None, True]:
+            assert out.find(inst_loc.__name__) > 0
+
+        return
+
+    def test_import_error_in_available_instruments(self):
+        """ Test handling of import errors in available_instruments
+        """
+
+        idict = pysat.utils.available_instruments(os.path)
+
+        for platform in idict.keys():
+            for name in idict[platform].keys():
+                assert 'ERROR' in idict[platform][name]['inst_ids_tags'].keys()
+                assert 'ERROR' in idict[platform][name][
+                    'inst_ids_tags']['ERROR']
+        return
