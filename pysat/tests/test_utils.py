@@ -298,9 +298,15 @@ class TestBasicNetCDF4():
                                'pysat_test_ncdf.nc')
         self.testInst.load(date=self.stime)
         # modify data names in data
-        original = sorted(self.testInst.data.columns)
-        self.testInst.data = self.testInst.data.rename(str.upper,
-                                                       axis='columns')
+        if self.testInst.pandas_format:
+            old_keys = sorted(self.testInst.data.keys())
+            mapper = {key: key.upper() for key in old_keys}
+            self.testInst.data = self.testInst.data.rename(mapper=mapper,
+                                                           axis='columns')
+        else:
+            old_keys = sorted(self.testInst.data.data_vars.keys())
+            mapper = {key: key.upper() for key in old_keys}
+            self.testInst.data = self.testInst.data.rename(name_dict=mapper)
         self.testInst.to_netcdf4(outfile, preserve_meta_case=True)
 
         loaded_inst, meta = pysat.utils.load_netcdf4(outfile)
@@ -309,7 +315,11 @@ class TestBasicNetCDF4():
         loaded_inst = loaded_inst.reindex(sorted(loaded_inst.columns), axis=1)
 
         # check that names are lower case when written
-        assert(np.all(original == loaded_inst.columns))
+        if self.testInst.pandas_format:
+            new_keys = sorted(self.testInst.data.keys())
+        else:
+            new_keys = sorted(self.testInst.data.data_vars.keys())
+        assert(np.all(old_keys == new_keys))
 
         for key in self.testInst.data.columns:
             assert(np.all(self.testInst[key] == loaded_inst[key.lower()]))
