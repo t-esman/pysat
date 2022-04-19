@@ -5,7 +5,7 @@ Bug reports, feature suggestions, and other contributions are greatly
 appreciated!  pysat is a community-driven project and welcomes both feedback and
 contributions.
 
-Come join us on Slack! An invitation to the pysat workspace is available 
+Come join us on Slack! An invitation to the pysat workspace is available
 in the 'About' section of the
 [pysat GitHub Repository.](https://github.com/pysat/pysat) Development meetings
 are generally held fortnightly.
@@ -47,7 +47,6 @@ To set up `pysat` for local development:
 1. `Fork pysat on GitHub <https://github.com/pysat/pysat/fork>`_.
 2. Clone your fork locally::
 
-    git clone git@github.com:your_name_here/pysat.git
     git clone git@github.com:your_name_here/pysat.git
 
 3. Create a branch for local development::
@@ -118,7 +117,7 @@ These include:
   `platform`, `name`, `tag`, and `inst_id`
 * The pysat logger is imported into each sub-module and provides status updates
   at the info and warning levels (as appropriate)
-* Several dependent packages have common nicknames, including:
+* Several dependent packages have common nicknames, including::
   * `import datetime as dt`
   * `import numpy as np`
   * `import pandas as pds`
