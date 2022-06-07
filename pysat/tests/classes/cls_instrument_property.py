@@ -731,7 +731,7 @@ class InstPropertyTests(object):
         """Test changing `pandas_format` attribute when data loaded."""
 
         # Load data
-        self.testInst.load(date=self.ref_time)
+        self.testInst.load(date=self.ref_time, use_header=True)
 
         # Get inverted pandas_format setting
         new_format = not self.testInst.pandas_format

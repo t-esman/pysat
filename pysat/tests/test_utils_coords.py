@@ -69,7 +69,7 @@ class TestUpdateLon(object):
         """Test `update_longitude` successful run."""
 
         self.py_inst = pysat.Instrument(platform='pysat', name=name)
-        self.py_inst.load(date=self.inst_time)
+        self.py_inst.load(date=self.inst_time, use_header=True)
 
         # Test instruments initially define longitude between 0-360 deg
         assert np.all(self.py_inst.data['longitude'] < 360.0)
@@ -86,7 +86,7 @@ class TestUpdateLon(object):
         """Test update_longitude with a bad longitude name."""
 
         self.py_inst = pysat.Instrument(platform='pysat', name="testing")
-        self.py_inst.load(date=self.inst_time)
+        self.py_inst.load(date=self.inst_time, use_header=True)
 
         testing.eval_bad_input(coords.update_longitude, ValueError,
                                "unknown longitude variable name",
@@ -124,7 +124,7 @@ class TestCalcSLT(object):
         # Instantiate instrument and load data
         self.py_inst = pysat.Instrument(platform='pysat', name=name,
                                         num_samples=1)
-        self.py_inst.load(date=self.inst_time)
+        self.py_inst.load(date=self.inst_time, use_header=True)
 
         coords.calc_solar_local_time(self.py_inst, lon_name="longitude",
                                      slt_name='slt')
@@ -148,7 +148,7 @@ class TestCalcSLT(object):
         # Instantiate instrument and load data
         self.py_inst = pysat.Instrument(platform='pysat', name=name,
                                         num_samples=1)
-        self.py_inst.load(date=self.inst_time)
+        self.py_inst.load(date=self.inst_time, use_header=True)
 
         # Apply solar local time method and capture logging output
         with caplog.at_level(logging.INFO, logger='pysat'):
@@ -167,7 +167,7 @@ class TestCalcSLT(object):
 
         # Instantiate instrument and load data
         self.py_inst = pysat.Instrument(platform='pysat', name="testing")
-        self.py_inst.load(date=self.inst_time)
+        self.py_inst.load(date=self.inst_time, use_header=True)
 
         coords.calc_solar_local_time(self.py_inst, lon_name="longitude",
                                      slt_name='slt')
@@ -185,7 +185,7 @@ class TestCalcSLT(object):
 
         # Instantiate instrument and load data
         self.py_inst = pysat.Instrument(platform='pysat', name="testing")
-        self.py_inst.load(date=self.inst_time)
+        self.py_inst.load(date=self.inst_time, use_header=True)
 
         # Test that the correct Exception and error message are raised
         testing.eval_bad_input(coords.calc_solar_local_time, ValueError,
@@ -202,7 +202,7 @@ class TestCalcSLT(object):
 
         # Instantiate instrument and load data
         self.py_inst = pysat.Instrument(platform='pysat', name=name)
-        self.py_inst.load(date=self.inst_time)
+        self.py_inst.load(date=self.inst_time, use_header=True)
         coords.calc_solar_local_time(self.py_inst, lon_name="longitude",
                                      slt_name='slt')
 
@@ -219,7 +219,8 @@ class TestCalcSLT(object):
         # Instantiate instrument and load data
         self.py_inst = pysat.Instrument(platform='pysat', name=name)
         self.py_inst.load(date=self.inst_time,
-                          end_date=self.inst_time + dt.timedelta(days=2))
+                          end_date=self.inst_time + dt.timedelta(days=2),
+                          use_header=True)
         coords.calc_solar_local_time(self.py_inst, lon_name="longitude",
                                      slt_name='slt', apply_modulus=False)
 
@@ -236,8 +237,9 @@ class TestCalcSLT(object):
 
         # Instantiate instrument and load data
         self.py_inst = pysat.Instrument(platform='pysat', name=name)
-        self.py_inst.load(date=self.inst_time, end_date=self.inst_time
-                          + dt.timedelta(days=2))
+        self.py_inst.load(date=self.inst_time,
+                          end_date=(self.inst_time + dt.timedelta(days=2)),
+                          use_header=True)
         coords.calc_solar_local_time(self.py_inst, lon_name="longitude",
                                      slt_name='slt', apply_modulus=False,
                                      ref_date=self.inst_time
@@ -256,7 +258,7 @@ class TestCalcSLT(object):
 
         # Instantiate instrument and load data
         self.py_inst = pysat.Instrument(platform='pysat', name=name)
-        self.py_inst.load(date=self.inst_time)
+        self.py_inst.load(date=self.inst_time, use_header=True)
         coords.calc_solar_local_time(self.py_inst, lon_name="longitude",
                                      slt_name='slt', apply_modulus=False)
 
@@ -271,7 +273,7 @@ class TestCalcSLT(object):
 
         # Instantiate instrument and load data
         self.py_inst = pysat.Instrument(platform='pysat', name="testing_xarray")
-        self.py_inst.load(date=self.inst_time)
+        self.py_inst.load(date=self.inst_time, use_header=True)
         lon_name = 'lon2'
 
         # Create a second longitude with a single value

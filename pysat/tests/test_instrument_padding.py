@@ -66,7 +66,8 @@ class TestDataPaddingbyFile(object):
         """Test data padding load by filename."""
 
         # Load the test data with padding
-        self.testInst.load(fname=self.testInst.files[tind], verifyPad=True)
+        self.testInst.load(fname=self.testInst.files[tind], verifyPad=True,
+                           use_header=True)
 
         rind = tind + ncycle
         if ncycle > 0:
@@ -81,7 +82,7 @@ class TestDataPaddingbyFile(object):
             self.testInst.prev(verifyPad=True)
 
         # Load the comparison file without padding and set the padding time
-        self.rawInst.load(fname=self.testInst.files[rind])
+        self.rawInst.load(fname=self.testInst.files[rind], use_header=True)
         self.delta = dt.timedelta(minutes=dmin)
 
         # Evaluate the test results
@@ -91,9 +92,11 @@ class TestDataPaddingbyFile(object):
     def test_fname_data_padding_jump(self):
         """Test data padding by filename after loading non-consecutive file."""
 
-        self.testInst.load(fname=self.testInst.files[1], verifyPad=True)
-        self.testInst.load(fname=self.testInst.files[10], verifyPad=True)
-        self.rawInst.load(fname=self.testInst.files[10])
+        self.testInst.load(fname=self.testInst.files[1], verifyPad=True,
+                           use_header=True)
+        self.testInst.load(fname=self.testInst.files[10], verifyPad=True,
+                           use_header=True)
+        self.rawInst.load(fname=self.testInst.files[10], use_header=True)
         self.delta = dt.timedelta(minutes=5)
         self.eval_index_start_end()
         return
@@ -101,14 +104,16 @@ class TestDataPaddingbyFile(object):
     def test_fname_data_padding_uniqueness(self):
         """Ensure uniqueness data padding when loading by file."""
 
-        self.testInst.load(fname=self.testInst.files[1], verifyPad=True)
+        self.testInst.load(fname=self.testInst.files[1], verifyPad=True,
+                           use_header=True)
         assert self.testInst.index.is_unique
         return
 
     def test_fname_data_padding_all_samples_present(self):
         """Ensure all samples present when padding and loading by file."""
 
-        self.testInst.load(fname=self.testInst.files[1], verifyPad=True)
+        self.testInst.load(fname=self.testInst.files[1], verifyPad=True,
+                           use_header=True)
         self.delta = pds.date_range(self.testInst.index[0],
                                     self.testInst.index[-1], freq='S')
         assert np.all(self.testInst.index == self.delta)
@@ -117,8 +122,8 @@ class TestDataPaddingbyFile(object):
     def test_fname_data_padding_removal(self):
         """Ensure padded samples nominally dropped, loading by file."""
 
-        self.testInst.load(fname=self.testInst.files[1])
-        self.rawInst.load(fname=self.testInst.files[1])
+        self.testInst.load(fname=self.testInst.files[1], use_header=True)
+        self.rawInst.load(fname=self.testInst.files[1], use_header=True)
         self.eval_index_start_end()
         return
 
@@ -276,7 +281,8 @@ class TestDataPadding(object):
     def test_data_padding(self):
         """Ensure that pad works at the instrument level."""
 
-        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True)
+        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True,
+                           use_header=True)
         self.eval_index_start_end()
         return
 
@@ -290,7 +296,8 @@ class TestDataPadding(object):
                                          clean_level='clean',
                                          pad=pad,
                                          update_files=True)
-        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True)
+        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True,
+                           use_header=True)
         self.eval_index_start_end()
         return
 
@@ -334,12 +341,12 @@ class TestDataPadding(object):
         """Test padding feature operates when there are missing prev days."""
 
         yr, doy = pysat.utils.time.getyrdoy(self.testInst.files.start_date)
-        self.testInst.load(yr, doy, verifyPad=True)
+        self.testInst.load(yr, doy, verifyPad=True, use_header=True)
         assert self.testInst.index[0] == self.testInst.date
         assert (self.testInst.index[-1]
                 > self.testInst.date + dt.timedelta(days=1))
 
-        self.testInst.load(yr, doy)
+        self.testInst.load(yr, doy, use_header=True)
         assert self.testInst.index[0] == self.testInst.date
         assert (self.testInst.index[-1]
                 < self.testInst.date + dt.timedelta(days=1))
@@ -349,12 +356,12 @@ class TestDataPadding(object):
         """Test padding feature operates when there are missing later days."""
 
         yr, doy = pysat.utils.time.getyrdoy(self.testInst.files.stop_date)
-        self.testInst.load(yr, doy, verifyPad=True)
+        self.testInst.load(yr, doy, verifyPad=True, use_header=True)
         assert self.testInst.index[0] < self.testInst.date
         assert (self.testInst.index[-1]
                 < self.testInst.date + dt.timedelta(days=1))
 
-        self.testInst.load(yr, doy)
+        self.testInst.load(yr, doy, use_header=True)
         assert self.testInst.index[0] == self.testInst.date
         assert (self.testInst.index[-1]
                 < self.testInst.date + dt.timedelta(days=1))
@@ -366,7 +373,7 @@ class TestDataPadding(object):
         # reduce available files
         self.testInst.files.files = self.testInst.files.files[0:1]
         yr, doy = pysat.utils.time.getyrdoy(self.testInst.files.start_date)
-        self.testInst.load(yr, doy, verifyPad=True)
+        self.testInst.load(yr, doy, verifyPad=True, use_header=True)
         assert self.testInst.index[0] == self.testInst.date
         assert (self.testInst.index[-1] < self.testInst.date
                 + dt.timedelta(days=1))
@@ -375,7 +382,8 @@ class TestDataPadding(object):
     def test_data_padding_next(self):
         """Test data padding with `.next()`."""
 
-        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True)
+        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True,
+                           use_header=True)
         self.testInst.next(verifyPad=True)
         self.eval_index_start_end()
         return
@@ -383,7 +391,7 @@ class TestDataPadding(object):
     def test_data_padding_multi_next(self):
         """Test data padding with multiple `.next()`."""
 
-        self.testInst.load(self.ref_time.year, self.ref_doy)
+        self.testInst.load(self.ref_time.year, self.ref_doy, use_header=True)
         self.testInst.next()
         self.testInst.next(verifyPad=True)
         self.eval_index_start_end()
@@ -392,7 +400,8 @@ class TestDataPadding(object):
     def test_data_padding_prev(self):
         """Test data padding with `.prev()`."""
 
-        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True)
+        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True,
+                           use_header=True)
         self.testInst.prev(verifyPad=True)
         self.eval_index_start_end()
         return
@@ -401,7 +410,7 @@ class TestDataPadding(object):
         """Test data padding with multiple `.prev()`."""
 
         self.ref_doy = 10
-        self.testInst.load(self.ref_time.year, self.ref_doy)
+        self.testInst.load(self.ref_time.year, self.ref_doy, use_header=True)
         self.testInst.prev()
         self.testInst.prev(verifyPad=True)
         self.eval_index_start_end()
@@ -409,9 +418,10 @@ class TestDataPadding(object):
 
     def test_data_padding_jump(self):
         """Test data padding if load is outside the cache window."""
-        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True)
+        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True,
+                           use_header=True)
         self.testInst.load(self.ref_time.year, self.ref_doy + 10,
-                           verifyPad=True)
+                           verifyPad=True, use_header=True)
         self.eval_index_start_end()
         return
 
@@ -419,7 +429,8 @@ class TestDataPadding(object):
         """Test index after data padding is unique."""
 
         self.ref_doy = 1
-        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True)
+        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True,
+                           use_header=True)
         assert (self.testInst.index.is_unique)
         return
 
@@ -427,7 +438,8 @@ class TestDataPadding(object):
         """Test data padding when all samples are present."""
 
         self.ref_doy = 1
-        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True)
+        self.testInst.load(self.ref_time.year, self.ref_doy, verifyPad=True,
+                           use_header=True)
         test_index = pds.date_range(self.testInst.index[0],
                                     self.testInst.index[-1], freq='S')
         assert (np.all(self.testInst.index == test_index))
@@ -437,7 +449,7 @@ class TestDataPadding(object):
         """Test data padding removal."""
 
         self.ref_doy = 1
-        self.testInst.load(self.ref_time.year, self.ref_doy)
+        self.testInst.load(self.ref_time.year, self.ref_doy, use_header=True)
         self.delta = dt.timedelta(seconds=0)
         self.eval_index_start_end()
         return

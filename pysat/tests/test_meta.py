@@ -69,7 +69,7 @@ class TestMeta(object):
             # Load the test Instrument
             self.testInst = pysat.Instrument(**inst_kwargs)
             stime = self.testInst.inst_module._test_dates['']['']
-            self.testInst.load(date=stime)
+            self.testInst.load(date=stime, use_header=True)
 
             # Save the meta object and data variable list
             self.meta = self.testInst.meta
@@ -1964,7 +1964,8 @@ class TestMetaMutable(object):
         """Set up the unit test environment for each method."""
 
         self.testInst = pysat.Instrument(platform='pysat', name='testing')
-        self.testInst.load(date=self.testInst.inst_module._test_dates[''][''])
+        self.testInst.load(date=self.testInst.inst_module._test_dates[''][''],
+                           use_header=True)
         self.meta = self.testInst.meta
         self.meta.mutable = True
 
@@ -2167,7 +2168,7 @@ class TestToDict(object):
 
         self.testInst = pysat.Instrument('pysat', 'testing', num_samples=5)
         self.stime = pysat.instruments.pysat_testing._test_dates['']['']
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
 
         # For output
         self.out = None
@@ -2245,7 +2246,7 @@ class TestToDictXarray(TestToDict):
         self.testInst = pysat.Instrument('pysat', 'testing_xarray',
                                          num_samples=5)
         self.stime = pysat.instruments.pysat_testing_xarray._test_dates['']['']
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
 
         # For output
         self.out = None
@@ -2262,7 +2263,7 @@ class TestToDictXarray2D(TestToDict):
         self.testInst = pysat.Instrument('pysat', 'testing2d_xarray',
                                          num_samples=5)
         self.stime = pysat.instruments.pysat_testing_xarray._test_dates['']['']
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
 
         # For output
         self.out = None
@@ -2279,7 +2280,7 @@ class TestToDictPandas2D(TestToDict):
         self.testInst = pysat.Instrument('pysat', 'testing2d',
                                          num_samples=5)
         self.stime = pysat.instruments.pysat_testing2d._test_dates['']['']
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
 
         # For output
         self.out = None
@@ -2296,7 +2297,7 @@ class TestToDictXarrayModel(TestToDict):
         self.testInst = pysat.Instrument('pysat', 'testmodel',
                                          num_samples=5)
         self.stime = pysat.instruments.pysat_testmodel._test_dates['']['']
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
 
         # For output
         self.out = None

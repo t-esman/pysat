@@ -71,7 +71,7 @@ class TestInstruments(InstLibTests):
             self.test_inst = pysat.Instrument(
                 inst_module=inst_dict['inst_module'])
 
-        self.test_inst.load(date=date)
+        self.test_inst.load(date=date, use_header=True)
 
         assert self.test_inst['uts'][0] == output
         return
@@ -86,7 +86,7 @@ class TestInstruments(InstLibTests):
         _, date = cls_inst_lib.initialize_test_inst_and_date(inst_dict)
         self.test_inst = pysat.Instrument(inst_module=inst_dict['inst_module'],
                                           num_samples=num)
-        self.test_inst.load(date=date)
+        self.test_inst.load(date=date, use_header=True)
 
         assert len(self.test_inst['uts']) == num
         return
@@ -113,7 +113,7 @@ class TestInstruments(InstLibTests):
         _, date = cls_inst_lib.initialize_test_inst_and_date(inst_dict)
         self.test_inst = pysat.Instrument(inst_module=inst_dict['inst_module'])
         if self.test_inst.name != 'testmodel':
-            self.test_inst.load(date=date, max_latitude=10.)
+            self.test_inst.load(date=date, max_latitude=10., use_header=True)
             assert np.all(np.abs(self.test_inst['latitude']) <= 10.)
         else:
             # Skipping testmodel Instrument

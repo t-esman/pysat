@@ -1383,7 +1383,7 @@ class TestMetaTranslation(object):
 
         self.test_inst = pysat.Instrument('pysat', 'testing', num_samples=5)
         self.test_date = pysat.instruments.pysat_testing._test_dates['']['']
-        self.test_inst.load(date=self.test_date)
+        self.test_inst.load(date=self.test_date, use_header=True)
         self.meta_dict = self.test_inst.meta.to_dict()
         self.out = None
 
@@ -1668,7 +1668,7 @@ class TestMetaTranslationXarray(TestMetaTranslation):
                                           num_samples=5)
         self.test_date = pysat.instruments.pysat_testing_xarray._test_dates
         self.test_date = self.test_date['']['']
-        self.test_inst.load(date=self.test_date)
+        self.test_inst.load(date=self.test_date, use_header=True)
         self.meta_dict = self.test_inst.meta.to_dict()
         self.out = None
 
@@ -1692,7 +1692,7 @@ class TestMetaTranslation2DXarray(TestMetaTranslation):
                                           num_samples=5)
         self.test_date = pysat.instruments.pysat_testing_xarray._test_dates
         self.test_date = self.test_date['']['']
-        self.test_inst.load(date=self.test_date)
+        self.test_inst.load(date=self.test_date, use_header=True)
         self.meta_dict = self.test_inst.meta.to_dict()
         self.out = None
 
@@ -1715,7 +1715,7 @@ class TestMetaTranslation2DPandas(TestMetaTranslation):
         self.test_inst = pysat.Instrument('pysat', 'testing2d',
                                           num_samples=5)
         self.test_date = pysat.instruments.pysat_testing2d._test_dates['']['']
-        self.test_inst.load(date=self.test_date)
+        self.test_inst.load(date=self.test_date, use_header=True)
         self.meta_dict = self.test_inst.meta.to_dict()
         self.out = None
 
@@ -1738,7 +1738,7 @@ class TestMetaTranslationModel(TestMetaTranslation):
         self.test_inst = pysat.Instrument('pysat', 'testmodel',
                                           num_samples=5)
         self.test_date = pysat.instruments.pysat_testmodel._test_dates['']['']
-        self.test_inst.load(date=self.test_date)
+        self.test_inst.load(date=self.test_date, use_header=True)
         self.meta_dict = self.test_inst.meta.to_dict()
         self.out = None
 

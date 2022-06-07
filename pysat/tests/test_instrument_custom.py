@@ -76,7 +76,7 @@ class TestBasics(object):
                                          clean_level='clean',
                                          update_files=True)
         self.load_date = pysat.instruments.pysat_testing._test_dates['']['']
-        self.testInst.load(date=self.load_date)
+        self.testInst.load(date=self.load_date, use_header=True)
         self.custom_args = [2]
         self.out = None
         return
@@ -114,7 +114,7 @@ class TestBasics(object):
                                     kwargs={'dkey': 'mlt'})
 
         # Execute custom method
-        self.testInst.load(date=self.load_date)
+        self.testInst.load(date=self.load_date, use_header=True)
 
         # Store output to be tested
         self.out = self.testInst.__str__()
@@ -238,7 +238,7 @@ class TestBasicsXarray(TestBasics):
                                          num_samples=10, clean_level='clean')
         self.load_date = pysat.instruments.pysat_testing_xarray._test_dates
         self.load_date = self.load_date['']['']
-        self.testInst.load(date=self.load_date)
+        self.testInst.load(date=self.load_date, use_header=True)
         self.custom_args = [2]
         return
 
@@ -261,7 +261,7 @@ class TestConstellationBasics(object):
                              update_files=True)
             for i in range(5)])
         self.load_date = pysat.instruments.pysat_testing._test_dates['']['']
-        self.testConst.load(date=self.load_date)
+        self.testConst.load(date=self.load_date, use_header=True)
         self.custom_args = [2]
         return
 

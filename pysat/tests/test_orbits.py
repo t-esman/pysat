@@ -132,7 +132,7 @@ class TestOrbitsUserInterface(object):
 
         self.in_kwargs['orbit_info'] = info
         self.testInst = pysat.Instrument(*self.in_args, **self.in_kwargs)
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
 
         testing.eval_bad_input(self.testInst.orbits.next, ValueError,
                                "Provided orbit index does not exist")
@@ -162,7 +162,7 @@ class TestOrbitsUserInterface(object):
 
         # Force index to None beforee loading and iterating
         self.testInst.orbits.orbit_index = None
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         testing.eval_bad_input(self.testInst.orbits.next, ValueError,
                                "Orbit properties must be defined")
         return
@@ -182,7 +182,7 @@ class TestOrbitsUserInterface(object):
 
         self.in_kwargs['orbit_info'] = {'index': 'mlt'}
         self.testInst = pysat.Instrument(*self.in_args, **self.in_kwargs)
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         out_str = self.testInst.orbits.__str__()
 
         assert out_str.find("Orbit Settings") >= 0
@@ -216,7 +216,7 @@ class TestSpecificUTOrbits(object):
         """Test successful orbit call by index."""
 
         # Load the data
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.orbits[orbit_inc]
 
         # Increment the time
@@ -239,7 +239,7 @@ class TestSpecificUTOrbits(object):
     def test_single_orbit_call_bad_index(self, orbit_ind, raise_err, err_msg):
         """Test orbit failure with bad index."""
 
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         with pytest.raises(raise_err) as err:
             self.testInst.orbits[orbit_ind]
 
@@ -250,7 +250,7 @@ class TestSpecificUTOrbits(object):
     def test_orbit_number_via_current_multiple_orbit_calls_in_day(self):
         """Test orbit number with multiple orbits calls in a day."""
 
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.bounds = (self.stime, None)
         true_vals = np.arange(15)
         true_vals[-1] = 0
@@ -267,7 +267,7 @@ class TestSpecificUTOrbits(object):
     def test_all_single_orbit_calls_in_day(self):
         """Test all single orbit calls in a day."""
 
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.bounds = (self.stime, None)
         for i, inst in enumerate(self.testInst.orbits):
             if i > 14:
@@ -305,7 +305,7 @@ class TestSpecificUTOrbits(object):
     def test_single_orbit_call_orbit_starts_0_UT_using_next(self):
         """Test orbit next call with data."""
 
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.orbits.next()
         self.etime = self.stime + dt.timedelta(seconds=(self.inc_min * 60 - 1))
         assert (self.testInst.index[0] == self.stime)
@@ -315,7 +315,7 @@ class TestSpecificUTOrbits(object):
     def test_single_orbit_call_orbit_starts_0_UT_using_prev(self):
         """Test orbit prev call with data."""
 
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.orbits.prev()
         self.stime += 14 * relativedelta(minutes=self.inc_min)
         self.etime = self.stime + dt.timedelta(seconds=((self.inc_min * 60)
@@ -328,7 +328,7 @@ class TestSpecificUTOrbits(object):
         """Test orbit next call with data for previous day."""
 
         self.stime -= dt.timedelta(days=1)
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.orbits.next()
         assert (self.testInst.index[0] == dt.datetime(2008, 12, 30, 23, 45))
         assert (self.testInst.index[-1]
@@ -340,7 +340,7 @@ class TestSpecificUTOrbits(object):
         """Test orbit previous call with data for previous day."""
 
         self.stime -= dt.timedelta(days=1)
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.orbits.prev()
         assert (self.testInst.index[0]
                 == (dt.datetime(2009, 1, 1)
@@ -380,7 +380,7 @@ class TestGeneralOrbitsMLT(object):
         """Test that copy is the same as original if data is loaded."""
 
         # Load data
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
 
         # Load up an orbit
         self.testInst.orbits[0]
@@ -393,7 +393,7 @@ class TestGeneralOrbitsMLT(object):
         """Test that equality is false if different data."""
 
         # Load data
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
 
         # Load up an orbit
         self.testInst.orbits[0]
@@ -457,7 +457,7 @@ class TestGeneralOrbitsMLT(object):
 
         # Set up tine instrument
         self.stime -= dt.timedelta(days=365 * 100)
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.orbits[0]
 
         # Trigger the StopIteration exception
@@ -473,7 +473,7 @@ class TestGeneralOrbitsMLT(object):
             inst.data = inst[0:20]
 
         self.testInst.custom_attach(truncate_data)
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.orbits.next()
 
         # A recursion issue has been observed in this area.
@@ -481,7 +481,7 @@ class TestGeneralOrbitsMLT(object):
         assert self.testInst.date == self.stime
         # Store comparison data
         saved_data = self.testInst.copy()
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.orbits[0]
         assert all(self.testInst.data == saved_data.data)
         d1check = self.testInst.date == saved_data.date
@@ -502,14 +502,15 @@ class TestGeneralOrbitsMLT(object):
 
         self.testInst.custom_attach(manual_orbits)
         self.stime += dt.timedelta(days=3)
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
 
         # Starting from no orbit calls next loads first orbit
         self.testInst.orbits.next()
 
         # Store comparison data
         saved_data = self.testInst.copy()
-        self.testInst.load(date=self.stime + dt.timedelta(days=1))
+        self.testInst.load(date=self.stime + dt.timedelta(days=1),
+                           use_header=True)
         self.testInst.orbits[0]
         if self.testInst.orbits.num == 1:
             # Equivalence occurs only when there is one orbit,
@@ -520,7 +521,8 @@ class TestGeneralOrbitsMLT(object):
         self.testInst.orbits[0]
         assert all(self.testInst.data == saved_data.data)
 
-        self.testInst.load(date=self.stime + dt.timedelta(days=1))
+        self.testInst.load(date=self.stime + dt.timedelta(days=1),
+                           use_header=True)
         self.testInst.orbits.prev()
         if self.testInst.orbits.num == 1:
             assert all(self.testInst.data == saved_data.data)
@@ -535,7 +537,7 @@ class TestGeneralOrbitsMLT(object):
     def test_repeated_orbit_calls(self, iterations):
         """Test that repeated orbit calls are reversible."""
 
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.orbits.next()
         assert_reversible_orbit(self.testInst, iterations)
         return
@@ -544,7 +546,7 @@ class TestGeneralOrbitsMLT(object):
     def test_repeated_orbit_calls_alternative(self, iterations):
         """Test repeated orbit calls are reversible using alternate pattern."""
 
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.orbits.next()
         assert_reversible_orbit_symmetric(self.testInst, iterations)
         return
@@ -804,7 +806,8 @@ class TestOrbitsGappyData(object):
         """Test that orbits are selected at same cutoffs when reversed."""
 
         # Start date offsets alligned to times defined in TestOrbitsGappyData
-        self.testInst.load(date=(self.stime + dt.timedelta(days=(day - 1))))
+        self.testInst.load(date=(self.stime + dt.timedelta(days=(day - 1))),
+                           use_header=True)
         self.testInst.orbits.next()
         assert_reversible_orbit(self.testInst, iterations)
         return
@@ -874,7 +877,7 @@ class TestOrbitsGappyData2(object):
     def test_repeated_orbit_calls_alternative(self):
         """Test repeated orbit calls are reversible."""
 
-        self.testInst.load(date=self.stime)
+        self.testInst.load(date=self.stime, use_header=True)
         self.testInst.orbits.next()
         assert_reversible_orbit_symmetric(self.testInst, 20)
         return
