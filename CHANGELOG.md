@@ -3,6 +3,12 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+[3.1.1] - 2023-06-02
+--------------------
+* Bug Fix
+  * Fixed a bug where expand_dims did not recognize Epoch as a potentially
+    unlimited dim.
+
 [3.1.0] - 2023-05-31
 --------------------
 * New Features
