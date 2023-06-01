@@ -2400,7 +2400,7 @@ class Instrument(object):
             if not equal_dims:
                 # Update the dimensions, padding data where necessary
                 new_data = pysat.utils.coords.expand_xarray_dims(
-                    new_data, self.meta, exclude_dims=['time'])
+                    new_data, self.meta, exclude_dims=['time', 'Epoch'])
 
             # Specify the dimension, if not otherwise specified
             if 'dim' not in kwargs:
